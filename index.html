@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quran Audio Player</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Custom Styles (Scrollbar & Arabic Font) -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
+        
+        .font-arabic {
+            font-family: 'Amiri', serif;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f8fafc;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Utility class for hiding elements */
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="flex h-screen bg-emerald-50 text-slate-800 font-sans overflow-hidden">
+
+    <!-- Hidden Audio Element -->
+    <audio id="audio-player"></audio>
+
+    <!-- --- SIDEBAR (List) --- -->
+    <aside id="sidebar" class="-translate-x-full md:translate-x-0 transition-transform duration-300 fixed md:static z-20 w-72 h-full bg-white shadow-xl flex flex-col">
+        <div class="p-6 bg-emerald-700 text-white flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+                <i data-lucide="book-open" class="text-emerald-200 w-7 h-7"></i>
+                <h1 class="text-xl font-bold tracking-wide">Al Quran</h1>
+            </div>
+            <!-- Mobile close button -->
+            <button class="md:hidden" id="btn-close-sidebar">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <!-- Tabs for Para / Surah -->
+        <div class="flex bg-slate-100 p-1 m-4 rounded-lg shrink-0">
+            <button id="tab-surah" class="flex-1 py-2 text-sm font-semibold rounded-md transition-all bg-white shadow text-emerald-700">
+                By Surah
+            </button>
+            <button id="tab-ayah" class="flex-1 py-2 text-sm font-semibold rounded-md transition-all text-slate-500 hover:text-emerald-600">
+                By Ayah
+            </button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="px-4 pb-4 border-b border-emerald-100 shrink-0">
+            <div class="relative">
+                <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4"></i>
+                <input 
+                    type="text" 
+                    id="search-input"
+                    placeholder="Search Surah..." 
+                    class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-sm"
+                />
+            </div>
+        </div>
+
+        <!-- List -->
+        <div id="list-container" class="flex-1 overflow-y-auto custom-scrollbar">
+            <!-- List items injected via JS -->
+        </div>
+    </aside>
+
+    <!-- --- MAIN CONTENT AREA --- -->
+    <main class="flex-1 flex flex-col relative w-full">
+        
+        <!-- Mobile Header -->
+        <div class="md:hidden p-4 bg-emerald-700 text-white flex items-center shadow-md shrink-0">
+            <button id="btn-open-sidebar" class="p-2 -ml-2 rounded-lg hover:bg-emerald-600">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+            <h1 class="text-lg font-bold ml-2">Quran Audio Player</h1>
+        </div>
+
+        <!-- Center Display -->
+        <div class="flex-1 flex flex-col items-center justify-start p-4 md:p-8 text-center bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] overflow-y-auto custom-scrollbar">
+            <div class="bg-white p-6 md:p-10 rounded-3xl shadow-xl border border-emerald-100 max-w-5xl w-full flex flex-col h-full min-h-[500px] transition-all">
+                
+                <!-- Header info for currently playing -->
+                <div class="shrink-0 mb-6 flex flex-col items-center">
+                    <p id="main-type" class="text-emerald-600 font-semibold tracking-widest uppercase text-xs md:text-sm mb-2">
+                        Currently Playing (Surah)
+                    </p>
+                    <h2 id="main-title" class="text-3xl md:text-4xl font-bold text-slate-800 mb-2">
+                        Surah 1
+                    </h2>
+                    <p id="main-subtitle" class="text-lg text-emerald-700 font-medium mb-4">
+                        Al-Fatihah
+                    </p>
+                    
+                    <!-- Play Button -->
+                    <button id="main-play-btn" class="bg-emerald-600 text-white p-4 rounded-full shadow-lg hover:bg-emerald-700 hover:shadow-emerald-500/30 transition-all transform hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-emerald-200">
+                        <i data-lucide="play" id="main-icon-play" class="w-7 h-7 ml-1"></i>
+                        <i data-lucide="pause" id="main-icon-pause" class="w-7 h-7 hidden"></i>
+                    </button>
+                </div>
+
+                <!-- Reading Area (Ayahs) -->
+                <div id="reading-area" class="flex-1 overflow-y-auto custom-scrollbar mt-4 pt-6 border-t border-slate-100 text-right px-2 md:px-8" dir="rtl">
+                    <!-- Audio streaming state -->
+                    <div id="audio-mode-msg" class="flex flex-col items-center justify-center h-full text-slate-400">
+                        <div class="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+                            <i data-lucide="book-open" class="text-emerald-200 w-12 h-12"></i>
+                        </div>
+                        <p>Audio streaming mode active.</p>
+                        <p class="text-sm mt-2">Switch to "By Ayah" to read the Uthmani script.</p>
+                    </div>
+
+                    <!-- Loading Spinner -->
+                    <div id="loading-spinner" class="hidden flex justify-center items-center h-full">
+                        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600"></div>
+                    </div>
+
+                    <!-- Arabic Text Container -->
+                    <div id="arabic-text-container" class="hidden leading-loose md:leading-[3.5rem] text-slate-800 text-2xl md:text-3xl font-arabic">
+                        <!-- Ayahs injected via JS -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- --- BOTTOM AUDIO PLAYER BAR --- -->
+        <div class="bg-white border-t border-emerald-100 p-4 md:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-10 w-full shrink-0">
+            <div class="max-w-4xl mx-auto">
+                
+                <!-- Progress Bar -->
+                <div class="flex items-center gap-4 mb-4">
+                    <span id="time-current" class="text-xs font-medium text-slate-500 w-10 text-right">00:00</span>
+                    <input 
+                        type="range" 
+                        id="progress-slider"
+                        min="0" 
+                        max="100" 
+                        value="0" 
+                        class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                    />
+                    <span id="time-total" class="text-xs font-medium text-slate-500 w-10">00:00</span>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex items-center justify-between">
+                    
+                    <!-- Track Info (Bottom left) -->
+                    <div class="hidden md:flex items-center gap-3 w-1/3">
+                        <div class="bg-emerald-100 p-2 rounded-lg shrink-0">
+                            <i data-lucide="book-open" class="text-emerald-700 w-5 h-5"></i>
+                        </div>
+                        <div class="truncate">
+                            <h3 id="bottom-title" class="font-semibold text-slate-800 text-sm leading-tight">Surah 1</h3>
+                            <p id="bottom-subtitle" class="text-xs text-slate-500 truncate">Al-Fatihah</p>
+                        </div>
+                    </div>
+
+                    <!-- Main Media Controls (Center) -->
+                    <div class="flex items-center justify-center gap-6 w-full md:w-1/3">
+                        <button id="btn-prev" class="text-slate-400 hover:text-emerald-600 transition-colors focus:outline-none">
+                            <i data-lucide="skip-back" class="w-6 h-6"></i>
+                        </button>
+                        
+                        <button id="btn-play" class="bg-emerald-100 text-emerald-700 p-3 rounded-full hover:bg-emerald-200 hover:scale-105 transition-all focus:outline-none">
+                            <i data-lucide="play" id="bottom-icon-play" class="w-6 h-6 ml-0.5"></i>
+                            <i data-lucide="pause" id="bottom-icon-pause" class="w-6 h-6 hidden"></i>
+                        </button>
+                        
+                        <button id="btn-next" class="text-slate-400 hover:text-emerald-600 transition-colors focus:outline-none">
+                            <i data-lucide="skip-forward" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+
+                    <!-- Volume Control (Bottom right) -->
+                    <div class="hidden md:flex items-center justify-end gap-3 w-1/3">
+                        <button id="btn-mute" class="text-slate-400 hover:text-emerald-600 transition-colors">
+                            <i data-lucide="volume-2" id="icon-vol-up" class="w-5 h-5"></i>
+                            <i data-lucide="volume-x" id="icon-vol-muted" class="w-5 h-5 hidden"></i>
+                        </button>
+                        <input 
+                            type="range" 
+                            id="volume-slider"
+                            min="0" 
+                            max="1" 
+                            step="0.01" 
+                            value="1" 
+                            class="w-24 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                        />
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- Mobile overlay for sidebar -->
+    <div id="sidebar-overlay" class="hidden md:hidden fixed inset-0 bg-black/50 z-10"></div>
+
+    <!-- Application Logic -->
+    <script>
+        // ------------------------------------------------------------------------
+        // INSTRUCTION FOR YOUR LOCAL FILES:
+        // Change `USE_LOCAL_FILES` to true when you host this with your own files.
+        // Make sure your audio files are named 001.mp3, 002.mp3 ... up to 6236.mp3
+        // and place them in an 'audio' folder next to this html file.
+        // ------------------------------------------------------------------------
+        const USE_LOCAL_FILES = false; 
+
+        // Data (Total 6236 Ayahs in the Quran)
+        const AYAHS = Array.from({length: 6236}, (_, i) => "Ayah " + (i + 1));
+
+        const SURAHS = [
+            "Al-Fatihah", "Al-Baqarah", "Ali 'Imran", "An-Nisa", "Al-Ma'idah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Tawbah", "Yunus",
+            "Hud", "Yusuf", "Ar-Ra'd", "Ibrahim", "Al-Hijr", "An-Nahl", "Al-Isra", "Al-Kahf", "Maryam", "Taha",
+            "Al-Anbiya", "Al-Hajj", "Al-Mu'minun", "An-Nur", "Al-Furqan", "Ash-Shu'ara", "An-Naml", "Al-Qasas", "Al-'Ankabut", "Ar-Rum",
+            "Luqman", "As-Sajdah", "Al-Ahzab", "Saba", "Fatir", "Ya-Sin", "As-Saffat", "Sad", "Az-Zumar", "Ghafir",
+            "Fussilat", "Ash-Shura", "Az-Zukhruf", "Ad-Dukhan", "Al-Jathiyah", "Al-Ahqaf", "Muhammad", "Al-Fath", "Al-Hujurat", "Qaf",
+            "Ad-Dhariyat", "At-Tur", "An-Najm", "Al-Qamar", "Ar-Rahman", "Al-Waqi'ah", "Al-Hadid", "Al-Mujadila", "Al-Hashr", "Al-Mumtahanah",
+            "As-Saff", "Al-Jumu'ah", "Al-Munafiqun", "At-Taghabun", "At-Talaq", "At-Tahrim", "Al-Mulk", "Al-Qalam", "Al-Haqqah", "Al-Ma'arij",
+            "Nuh", "Al-Jinn", "Al-Muzzammil", "Al-Muddaththir", "Al-Qiyamah", "Al-Insan", "Al-Mursalat", "An-Naba", "An-Nazi'at", "'Abasa",
+            "At-Takwir", "Al-Infitar", "Al-Mutaffifin", "Al-Inshiqaq", "Al-Buruj", "At-Tariq", "Al-A'la", "Al-Ghashiyah", "Al-Fajr", "Al-Balad",
+            "Ash-Shams", "Al-Lail", "Ad-Duhaa", "Ash-Sharh", "At-Tin", "Al-'Alaq", "Al-Qadr", "Al-Bayyinah", "Az-Zalzalah", "Al-'Adiyat",
+            "Al-Qari'ah", "At-Takathur", "Al-'Asr", "Al-Humazah", "Al-Fil", "Quraish", "Al-Ma'un", "Al-Kawthar", "Al-Kafirun", "An-Nasr",
+            "Al-Masad", "Al-Ikhlas", "Al-Falaq", "An-Nas"
+        ];
+
+        // State
+        let state = {
+            currentIndex: 0,
+            playingType: 'surah', // 'surah' | 'ayah'
+            viewTab: 'surah',     // 'surah' | 'ayah'
+            isPlaying: false,
+            searchQuery: "",
+            isSidebarOpen: false,
+            volume: 1,
+            isMuted: false
+        };
+
+        // DOM Elements
+        const audio = document.getElementById('audio-player');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+        const listContainer = document.getElementById('list-container');
+        const searchInput = document.getElementById('search-input');
+        
+        // Tabs
+        const tabSurah = document.getElementById('tab-surah');
+        const tabAyah = document.getElementById('tab-ayah');
+        
+        // Reading Area Elements
+        const audioModeMsg = document.getElementById('audio-mode-msg');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const arabicTextContainer = document.getElementById('arabic-text-container');
+        
+        // Progress & Volume
+        const progressSlider = document.getElementById('progress-slider');
+        const timeCurrent = document.getElementById('time-current');
+        const timeTotal = document.getElementById('time-total');
+        const volumeSlider = document.getElementById('volume-slider');
+
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // ------------------------------------------------------------------------
+        // HELPER FUNCTIONS
+        // ------------------------------------------------------------------------
+        const padZero = (num) => String(num).padStart(3, '0');
+
+        const formatTime = (time) => {
+            if (isNaN(time)) return "00:00";
+            const mins = Math.floor(time / 60);
+            const secs = Math.floor(time % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        };
+
+        const getAudioSource = (type, index) => {
+            if (type === 'surah') {
+                return `https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/${index + 1}.mp3`;
+            } else {
+                const fileNumber = padZero(index + 1);
+                if (USE_LOCAL_FILES) {
+                    return `/audio/${fileNumber}.mp3`;
+                }
+                // Directly streams from the Ayah audio CDN
+                return `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${index + 1}.mp3`; 
+            }
+        };
+
+        // ------------------------------------------------------------------------
+        // UI RENDERING
+        // ------------------------------------------------------------------------
+        function renderSidebar() {
+            const activeList = state.viewTab === 'ayah' ? AYAHS : SURAHS;
+            const query = state.searchQuery.toLowerCase();
+            
+            const filteredItems = activeList
+                .map((name, index) => ({ name, index }))
+                .filter(item => 
+                    item.name.toLowerCase().includes(query) ||
+                    (item.index + 1).toString().includes(query)
+                );
+
+            listContainer.innerHTML = '';
+
+            if (filteredItems.length === 0) {
+                listContainer.innerHTML = `<div class="p-6 text-center text-slate-500 text-sm">No items found.</div>`;
+                return;
+            }
+
+            // Cap items to 150 to prevent 6236 DOM nodes from lagging the browser
+            const itemsToRender = filteredItems.slice(0, 150);
+
+            itemsToRender.forEach(item => {
+                const isPlayingItem = (state.playingType === state.viewTab && state.currentIndex === item.index);
+                
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left px-6 py-4 border-b border-slate-50 hover:bg-emerald-50 transition-colors flex items-center justify-between group ${isPlayingItem ? 'bg-emerald-100 border-l-4 border-l-emerald-600' : 'border-l-4 border-l-transparent'}`;
+                
+                // Content
+                let innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <span class="text-sm font-semibold w-8 h-8 flex items-center justify-center rounded-full shrink-0 ${isPlayingItem ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-500 group-hover:bg-emerald-200 group-hover:text-emerald-700'}">
+                            ${item.index + 1}
+                        </span>
+                        <span class="font-medium text-sm ${isPlayingItem ? 'text-emerald-800' : 'text-slate-700'}">
+                            ${item.name}
+                        </span>
+                    </div>`;
+
+                // Add playing animation bars if active
+                if (isPlayingItem && state.isPlaying) {
+                    innerHTML += `
+                        <div class="flex gap-1 items-end h-4 shrink-0">
+                            <div class="w-1 h-2 bg-emerald-500 animate-[pulse_1s_ease-in-out_infinite] rounded-t"></div>
+                            <div class="w-1 h-4 bg-emerald-500 animate-[pulse_1s_ease-in-out_infinite_100ms] rounded-t"></div>
+                            <div class="w-1 h-3 bg-emerald-500 animate-[pulse_1s_ease-in-out_infinite_200ms] rounded-t"></div>
+                        </div>`;
+                }
+
+                btn.innerHTML = innerHTML;
+                btn.onclick = () => playTrack(state.viewTab, item.index);
+                listContainer.appendChild(btn);
+            });
+
+            // Note for users if search yields too many results
+            if (filteredItems.length > 150) {
+                const note = document.createElement('div');
+                note.className = "p-4 text-center text-xs text-slate-400";
+                note.innerText = `Showing 150 of ${filteredItems.length} results. Use search to narrow down.`;
+                listContainer.appendChild(note);
+            }
+        }
+
+        function updateMainDisplay() {
+            const isAyah = state.playingType === 'ayah';
+            const name = isAyah ? AYAHS[state.currentIndex] : SURAHS[state.currentIndex];
+            const num = state.currentIndex + 1;
+
+            // Main display texts
+            document.getElementById('main-type').innerText = `Currently Playing (${isAyah ? 'Ayah' : 'Surah'})`;
+            document.getElementById('main-title').innerText = `${isAyah ? 'Ayah' : 'Surah'} ${num}`;
+            document.getElementById('main-subtitle').innerText = name;
+            
+            // Bottom bar texts
+            document.getElementById('bottom-title').innerText = `${isAyah ? 'Ayah' : 'Surah'} ${num}`;
+            document.getElementById('bottom-subtitle').innerText = name;
+
+            // Update Play/Pause Icons
+            const mPlay = document.getElementById('main-icon-play');
+            const mPause = document.getElementById('main-icon-pause');
+            const bPlay = document.getElementById('bottom-icon-play');
+            const bPause = document.getElementById('bottom-icon-pause');
+
+            if (state.isPlaying) {
+                mPlay.classList.add('hidden'); mPause.classList.remove('hidden');
+                bPlay.classList.add('hidden'); bPause.classList.remove('hidden');
+            } else {
+                mPlay.classList.remove('hidden'); mPause.classList.add('hidden');
+                bPlay.classList.remove('hidden'); bPause.classList.add('hidden');
+            }
+        }
+
+        function updateSidebarVisibility() {
+            if (state.isSidebarOpen) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebarOverlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden');
+            }
+        }
+
+        function updateTabStyles() {
+            searchInput.placeholder = `Search ${state.viewTab === 'ayah' ? 'Ayah' : 'Surah'}...`;
+            if (state.viewTab === 'surah') {
+                tabSurah.className = "flex-1 py-2 text-sm font-semibold rounded-md transition-all bg-white shadow text-emerald-700";
+                tabAyah.className = "flex-1 py-2 text-sm font-semibold rounded-md transition-all text-slate-500 hover:text-emerald-600";
+            } else {
+                tabSurah.className = "flex-1 py-2 text-sm font-semibold rounded-md transition-all text-slate-500 hover:text-emerald-600";
+                tabAyah.className = "flex-1 py-2 text-sm font-semibold rounded-md transition-all bg-white shadow text-emerald-700";
+            }
+        }
+
+        // ------------------------------------------------------------------------
+        // API (FETCH AYAH TEXT)
+        // ------------------------------------------------------------------------
+        async function fetchAyahText() {
+            if (state.playingType !== 'ayah') {
+                audioModeMsg.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+                arabicTextContainer.classList.add('hidden');
+                return;
+            }
+
+            // Show loading
+            audioModeMsg.classList.add('hidden');
+            arabicTextContainer.classList.add('hidden');
+            loadingSpinner.classList.remove('hidden');
+
+            try {
+                // Fetch direct text and meta data for the specific Ayah via API
+                const res = await fetch(`https://api.alquran.cloud/v1/ayah/${state.currentIndex + 1}/quran-uthmani`);
+                const data = await res.json();
+                
+                if (data.code === 200) {
+                    const ayah = data.data;
+                    let htmlContent = `
+                        <span class="inline">
+                            ${ayah.text} 
+                            <span class="text-emerald-600 text-base md:text-xl mx-2 font-sans inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 border border-emerald-100">
+                                ${ayah.numberInSurah}
+                            </span>
+                        </span>
+                        <div class="text-sm text-slate-500 mt-6 font-sans text-center border-t border-slate-100 pt-4">
+                            Surah ${ayah.surah.englishName} (${ayah.surah.name}) - Ayah ${ayah.numberInSurah}
+                        </div>`;
+                    arabicTextContainer.innerHTML = htmlContent;
+
+                    // Update main screen with dynamically loaded Surah metadata for this Ayah
+                    document.getElementById('main-subtitle').innerText = `Surah ${ayah.surah.englishName}, Ayah ${ayah.numberInSurah}`;
+                    document.getElementById('bottom-subtitle').innerText = `Surah ${ayah.surah.englishName}, Ayah ${ayah.numberInSurah}`;
+                }
+            } catch (err) {
+                console.error("Failed to fetch Ayah text:", err);
+                arabicTextContainer.innerHTML = '<p class="text-center text-lg mt-10">Failed to load text. Please check your connection.</p>';
+            } finally {
+                loadingSpinner.classList.add('hidden');
+                arabicTextContainer.classList.remove('hidden');
+            }
+        }
+
+        // ------------------------------------------------------------------------
+        // ACTIONS & LOGIC
+        // ------------------------------------------------------------------------
+        function togglePlay() {
+            if (state.isPlaying) {
+                audio.pause();
+            } else {
+                audio.play();
+            }
+            state.isPlaying = !state.isPlaying;
+            updateMainDisplay();
+            renderSidebar(); // Update animated bars
+        }
+
+        function playTrack(type, index) {
+            const typeChanged = state.playingType !== type;
+            const indexChanged = state.currentIndex !== index;
+
+            state.playingType = type;
+            state.currentIndex = index;
+            state.isPlaying = true;
+            state.isSidebarOpen = false;
+
+            audio.src = getAudioSource(type, index);
+            audio.play();
+
+            updateSidebarVisibility();
+            updateMainDisplay();
+            renderSidebar();
+
+            if (typeChanged || indexChanged) {
+                fetchAyahText();
+            }
+        }
+
+        function nextTrack() {
+            const maxList = state.playingType === 'ayah' ? AYAHS : SURAHS;
+            if (state.currentIndex < maxList.length - 1) {
+                playTrack(state.playingType, state.currentIndex + 1);
+            }
+        }
+
+        function prevTrack() {
+            if (state.currentIndex > 0) {
+                playTrack(state.playingType, state.currentIndex - 1);
+            }
+        }
+
+        function toggleMute() {
+            const vUp = document.getElementById('icon-vol-up');
+            const vMute = document.getElementById('icon-vol-muted');
+
+            if (state.isMuted) {
+                audio.volume = state.volume || 1;
+                state.isMuted = false;
+                volumeSlider.value = audio.volume;
+                vUp.classList.remove('hidden'); vMute.classList.add('hidden');
+            } else {
+                audio.volume = 0;
+                state.isMuted = true;
+                volumeSlider.value = 0;
+                vUp.classList.add('hidden'); vMute.classList.remove('hidden');
+            }
+        }
+
+        // ------------------------------------------------------------------------
+        // EVENT LISTENERS
+        // ------------------------------------------------------------------------
+        
+        // Audio Events
+        audio.addEventListener('timeupdate', () => {
+            if (audio.duration) {
+                progressSlider.value = audio.currentTime;
+                timeCurrent.innerText = formatTime(audio.currentTime);
+            }
+        });
+
+        audio.addEventListener('loadedmetadata', () => {
+            progressSlider.max = audio.duration;
+            timeTotal.innerText = formatTime(audio.duration);
+        });
+
+        audio.addEventListener('ended', nextTrack);
+
+        // UI Interactions
+        document.getElementById('main-play-btn').onclick = togglePlay;
+        document.getElementById('btn-play').onclick = togglePlay;
+        document.getElementById('btn-next').onclick = nextTrack;
+        document.getElementById('btn-prev').onclick = prevTrack;
+        document.getElementById('btn-mute').onclick = toggleMute;
+
+        progressSlider.addEventListener('input', (e) => {
+            audio.currentTime = e.target.value;
+        });
+
+        volumeSlider.addEventListener('input', (e) => {
+            const val = Number(e.target.value);
+            audio.volume = val;
+            state.volume = val;
+            state.isMuted = val === 0;
+
+            const vUp = document.getElementById('icon-vol-up');
+            const vMute = document.getElementById('icon-vol-muted');
+            if (state.isMuted) {
+                vUp.classList.add('hidden'); vMute.classList.remove('hidden');
+            } else {
+                vUp.classList.remove('hidden'); vMute.classList.add('hidden');
+            }
+        });
+
+        // Tabs
+        tabSurah.onclick = () => {
+            state.viewTab = 'surah';
+            updateTabStyles();
+            renderSidebar();
+        };
+
+        tabAyah.onclick = () => {
+            state.viewTab = 'ayah';
+            updateTabStyles();
+            renderSidebar();
+        };
+
+        // Search
+        searchInput.addEventListener('input', (e) => {
+            state.searchQuery = e.target.value;
+            renderSidebar();
+        });
+
+        // Sidebar Mobile Toggle
+        document.getElementById('btn-open-sidebar').onclick = () => {
+            state.isSidebarOpen = true;
+            updateSidebarVisibility();
+        };
+
+        document.getElementById('btn-close-sidebar').onclick = () => {
+            state.isSidebarOpen = false;
+            updateSidebarVisibility();
+        };
+
+        sidebarOverlay.onclick = () => {
+            state.isSidebarOpen = false;
+            updateSidebarVisibility();
+        };
+
+        // ------------------------------------------------------------------------
+        // INITIALIZATION
+        // ------------------------------------------------------------------------
+        audio.src = getAudioSource(state.playingType, state.currentIndex);
+        updateTabStyles();
+        updateMainDisplay();
+        renderSidebar();
+        fetchAyahText();
+
+    </script>
+</body>
+</html>
