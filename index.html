@@ -186,7 +186,8 @@
                     </div>
 
                     <!-- Arabic Text Container (The element that actually scrolls) -->
-                    <div id="arabic-text-container" class="hidden mb-2 w-full flex-1 overflow-y-auto custom-scrollbar px-2 md:px-4">
+                    <!-- Added cursor-pointer so users know they can click the screen edges -->
+                    <div id="arabic-text-container" class="hidden mb-2 w-full flex-1 overflow-y-auto custom-scrollbar px-2 md:px-4 cursor-default">
                         <!-- Ayahs injected via JS -->
                     </div>
 
@@ -627,7 +628,7 @@
                 if (data.code === 200) {
                     if (state.playingType === 'ayah') {
                         // Single Ayah Mode - flex-1 enables scroll inside the container
-                        arabicTextContainer.className = "hidden leading-[4.5rem] md:leading-[6.5rem] text-slate-900 text-3xl md:text-4xl font-arabic w-full flex-1 overflow-y-auto custom-scrollbar px-2 md:px-4 pb-12";
+                        arabicTextContainer.className = "hidden leading-[4.5rem] md:leading-[6.5rem] text-slate-900 text-3xl md:text-4xl font-arabic w-full flex-1 overflow-y-auto custom-scrollbar px-2 md:px-4 pb-12 cursor-default";
                         
                         const ayah = data.data;
                         let htmlContent = `
@@ -646,13 +647,13 @@
                         document.getElementById('bottom-subtitle').innerText = `Surah ${ayah.surah.englishName}, Ayah ${ayah.numberInSurah}`;
                     } else if (state.playingType === 'page') {
                         // Page Mode - flex-1 enables internal scroll, ruled-page applies the lines
-                        arabicTextContainer.className = "hidden mushaf-layout ruled-page text-slate-900 font-arabic w-full flex-1 overflow-y-auto custom-scrollbar px-2 md:px-6 pb-12";
+                        arabicTextContainer.className = "hidden mushaf-layout ruled-page text-slate-900 font-arabic w-full flex-1 overflow-y-auto custom-scrollbar px-2 md:px-6 pb-12 cursor-pointer";
                         
                         const ayahs = data.data.ayahs;
                         
                         // Map all ayahs naturally so words stay close, but the CSS forces huge line heights
                         let htmlContent = ayahs.map(ayah => `
-                            <span class="inline">
+                            <span class="inline pointer-events-none">
                                 ${ayah.text} 
                                 <span class="text-emerald-700 text-sm md:text-lg mx-1.5 font-sans inline-flex items-center justify-center w-6 h-6 md:w-8 md:h-8 rounded-full bg-emerald-900/5 border border-emerald-900/20">
                                     ${ayah.numberInSurah}
@@ -663,7 +664,7 @@
                         // Add Surah footer, safely resetting its style so it isn't affected by the massive line-height rules above
                         const surahsOnPage = [...new Set(ayahs.map(a => a.surah.englishName))].join(', ');
                         htmlContent += `
-                            <div class="text-sm text-slate-500 mt-10 font-sans text-center border-t border-emerald-900/10 pt-4" style="line-height: 1.5 !important; font-size: 16px !important; text-align-last: center; background: #FCFBF4;">
+                            <div class="text-sm text-slate-500 mt-10 font-sans text-center border-t border-emerald-900/10 pt-4 pointer-events-none" style="line-height: 1.5 !important; font-size: 16px !important; text-align-last: center; background: #FCFBF4;">
                                 Surahs on this page: ${surahsOnPage}
                             </div>`;
 
@@ -778,6 +779,23 @@
         // EVENT LISTENERS
         // ------------------------------------------------------------------------
         
+        // Touch/Click screen edge navigation for Page mode
+        arabicTextContainer.addEventListener('click', (e) => {
+            if (state.playingType !== 'page') return;
+            
+            const clickX = e.clientX;
+            const screenWidth = window.innerWidth;
+
+            // Left 25% of the screen = Previous
+            if (clickX < screenWidth * 0.25) {
+                prevTrack();
+            } 
+            // Right 25% of the screen = Next
+            else if (clickX > screenWidth * 0.75) {
+                nextTrack();
+            }
+        });
+
         // Save scroll position automatically when reading
         let scrollTimeout;
         arabicTextContainer.addEventListener('scroll', () => {
