@@ -36,22 +36,39 @@
         /* Mushaf Page Layout Styles */
         .mushaf-layout {
             text-align: justify;
-            text-justify: inter-word;
             text-align-last: center;
             display: block;
         }
 
-        /* Ruled paper effect for page mode - Increased spacing for perfect reading */
+        /* Ruled paper effect for page mode - Exact Table-like Rows with massive separation */
         .ruled-page {
-            line-height: 5rem;
-            background-image: linear-gradient(to bottom, transparent calc(5rem - 1px), rgba(6, 78, 59, 0.2) calc(5rem - 1px));
-            background-size: 100% 5rem;
+            /* Mobile Layout */
+            font-size: 28px !important;
+            line-height: 80px !important;
+            background-image: repeating-linear-gradient(
+                to bottom,
+                transparent 0px,
+                transparent 78px,
+                #a7f3d0 78px, /* emerald-200 line */
+                #a7f3d0 80px
+            ) !important;
+            background-size: 100% 80px !important;
+            padding-top: 10px; 
         }
         @media (min-width: 768px) {
             .ruled-page {
-                line-height: 6.5rem;
-                background-image: linear-gradient(to bottom, transparent calc(6.5rem - 1px), rgba(6, 78, 59, 0.2) calc(6.5rem - 1px));
-                background-size: 100% 6.5rem;
+                /* Desktop Layout */
+                font-size: 38px !important;
+                line-height: 120px !important;
+                background-image: repeating-linear-gradient(
+                    to bottom,
+                    transparent 0px,
+                    transparent 118px,
+                    #a7f3d0 118px, /* emerald-200 line */
+                    #a7f3d0 120px
+                ) !important;
+                background-size: 100% 120px !important;
+                padding-top: 15px;
             }
         }
 
@@ -123,7 +140,7 @@
         <!-- Center Display -->
         <div class="flex-1 flex flex-col items-center justify-start p-4 md:p-8 text-center bg-emerald-100/50 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] overflow-y-auto custom-scrollbar">
             
-            <!-- The Mushaf "Page" Card (Shrink-0 & h-max guarantee the background covers all content) -->
+            <!-- The Mushaf "Page" Card -->
             <div class="bg-[#FCFBF4] bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] p-8 md:p-12 rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-[#e5dfc5] max-w-5xl w-full flex flex-col min-h-[500px] shrink-0 h-max transition-all relative">
                 
                 <!-- Traditional Mushaf inner borders -->
@@ -550,8 +567,8 @@
                 
                 if (data.code === 200) {
                     if (state.playingType === 'ayah') {
-                        // Styling for single ayah
-                        arabicTextContainer.className = "leading-[3.5rem] md:leading-[5rem] text-slate-900 text-2xl md:text-3xl font-arabic w-full";
+                        // Single Ayah Mode - Increased size and line height
+                        arabicTextContainer.className = "leading-[4.5rem] md:leading-[6.5rem] text-slate-900 text-3xl md:text-4xl font-arabic w-full";
                         
                         const ayah = data.data;
                         let htmlContent = `
@@ -569,12 +586,12 @@
                         document.getElementById('main-subtitle').innerText = `Surah ${ayah.surah.englishName}, Ayah ${ayah.numberInSurah}`;
                         document.getElementById('bottom-subtitle').innerText = `Surah ${ayah.surah.englishName}, Ayah ${ayah.numberInSurah}`;
                     } else if (state.playingType === 'page') {
-                        // Use natural text flow to keep words close together, but apply ruled-page CSS for table-like row lines
-                        arabicTextContainer.className = "mushaf-layout ruled-page text-slate-900 text-2xl md:text-3xl lg:text-4xl font-arabic w-full px-2 md:px-6";
+                        // Apply my massive custom ruled CSS from the <style> block directly
+                        arabicTextContainer.className = "mushaf-layout ruled-page text-slate-900 font-arabic w-full px-2 md:px-6";
                         
                         const ayahs = data.data.ayahs;
                         
-                        // Map all ayahs naturally so the browser can wrap them closely without gaps
+                        // Map all ayahs naturally so words stay close, but the CSS forces huge line heights
                         let htmlContent = ayahs.map(ayah => `
                             <span class="inline">
                                 ${ayah.text} 
@@ -583,6 +600,13 @@
                                 </span>
                             </span>
                         `).join(' ');
+
+                        // Add Surah footer, safely resetting its style so it isn't affected by the massive line-height rules above
+                        const surahsOnPage = [...new Set(ayahs.map(a => a.surah.englishName))].join(', ');
+                        htmlContent += `
+                            <div class="text-sm text-slate-500 mt-10 font-sans text-center border-t border-emerald-900/10 pt-4" style="line-height: 1.5 !important; font-size: 16px !important; text-align-last: center; background: #FCFBF4;">
+                                Surahs on this page: ${surahsOnPage}
+                            </div>`;
 
                         arabicTextContainer.innerHTML = htmlContent;
                     }
