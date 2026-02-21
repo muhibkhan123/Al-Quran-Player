@@ -152,7 +152,7 @@
                     </div>
 
                     <!-- Arabic Text Container -->
-                    <div id="arabic-text-container" class="hidden mb-8">
+                    <div id="arabic-text-container" class="hidden mb-8 w-full">
                         <!-- Ayahs injected via JS -->
                     </div>
 
@@ -537,7 +537,7 @@
                 if (data.code === 200) {
                     if (state.playingType === 'ayah') {
                         // Styling for single ayah
-                        arabicTextContainer.className = "leading-loose md:leading-[3.5rem] text-slate-900 text-2xl md:text-3xl font-arabic";
+                        arabicTextContainer.className = "leading-loose md:leading-[3.5rem] text-slate-900 text-2xl md:text-3xl font-arabic w-full";
                         
                         const ayah = data.data;
                         let htmlContent = `
@@ -555,20 +555,54 @@
                         document.getElementById('main-subtitle').innerText = `Surah ${ayah.surah.englishName}, Ayah ${ayah.numberInSurah}`;
                         document.getElementById('bottom-subtitle').innerText = `Surah ${ayah.surah.englishName}, Ayah ${ayah.numberInSurah}`;
                     } else if (state.playingType === 'page') {
-                        // Styling for full Mushaf page (Justified, larger text, taller line height)
-                        arabicTextContainer.className = "mushaf-layout leading-[3.5rem] md:leading-[4.5rem] text-slate-900 text-3xl md:text-4xl font-arabic px-2 md:px-6";
+                        // Styling for full Mushaf page (16 line Table Rows format)
+                        arabicTextContainer.className = "text-slate-900 text-2xl md:text-3xl lg:text-4xl font-arabic w-full flex flex-col items-center";
                         
                         const ayahs = data.data.ayahs;
-                        let htmlContent = ayahs.map(ayah => `
-                            <span class="inline">
-                                ${ayah.text} 
-                                <span class="text-emerald-700 text-base md:text-xl mx-1.5 font-sans inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-900/5 border border-emerald-900/20">
-                                    ${ayah.numberInSurah}
-                                </span>
-                            </span>
-                        `).join(' ');
+                        
+                        // Extract every word and verse marker into a single array
+                        let allTokens = [];
+                        ayahs.forEach(ayah => {
+                            const words = ayah.text.split(' ');
+                            words.forEach(w => {
+                                if (w.trim()) allTokens.push(w);
+                            });
+                            // Push the ayah number circle as a token
+                            allTokens.push(`<span class="text-emerald-700 text-sm md:text-lg mx-1.5 font-sans inline-flex items-center justify-center w-6 h-6 md:w-8 md:h-8 rounded-full bg-emerald-900/5 border border-emerald-900/20">${ayah.numberInSurah}</span>`);
+                        });
+
+                        // Divide the array of words into exactly 16 table rows
+                        const numRows = 16;
+                        const tokensPerRow = Math.ceil(allTokens.length / numRows);
+                        
+                        // We use a top border to start the "table" look
+                        let htmlContent = `<div class="flex flex-col w-full border-t border-emerald-900/20">`;
+                        
+                        for (let i = 0; i < numRows; i++) {
+                            const rowTokens = allTokens.slice(i * tokensPerRow, (i + 1) * tokensPerRow);
                             
-                        // Pushed only the Arabic text; removed all English subtitle/footer clutter for total immersion
+                            // If there are no tokens left (e.g. short page), just render an empty lined row
+                            if (rowTokens.length === 0) {
+                                htmlContent += `<div class="border-b border-emerald-900/20 py-4 md:py-6 w-full min-h-[4rem] md:min-h-[5rem]"></div>`;
+                                continue;
+                            }
+
+                            // The last row gets centered instead of fully stretched so words aren't too far apart at the end
+                            const isLastRow = (i === numRows - 1);
+                            const textAlignLast = isLastRow ? 'center' : 'justify';
+                            
+                            // Each row is a block that justifies the text perfectly across the full width, with a bottom border
+                            htmlContent += `
+                                <div class="border-b border-emerald-900/20 py-3 md:py-5 w-full flex items-center justify-center min-h-[4rem] md:min-h-[5rem]">
+                                    <div class="w-full px-2" style="text-align-last: ${textAlignLast}; text-justify: inter-word;">
+                                        ${rowTokens.join(' ')}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                        
+                        htmlContent += `</div>`;
+                            
                         arabicTextContainer.innerHTML = htmlContent;
                     }
                 }
