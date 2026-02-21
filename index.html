@@ -172,12 +172,12 @@
                 <div id="reading-area" class="mt-2 text-right h-full relative z-10 flex flex-col flex-1 overflow-hidden" dir="rtl">
                     
                     <!-- Side Scroll Buttons -->
-                    <div id="side-scroll-buttons" class="hidden absolute left-0 md:left-4 top-1/2 -translate-y-1/2 flex-col gap-3 z-30 transition-all duration-300">
-                        <button id="btn-scroll-up" class="p-2.5 md:p-3 bg-emerald-800/10 text-emerald-800 hover:bg-emerald-800 hover:text-white rounded-full shadow-sm backdrop-blur-sm transition-all focus:outline-none border border-emerald-900/10">
-                            <i data-lucide="chevron-up" class="w-5 h-5 md:w-6 md:h-6"></i>
+                    <div id="side-scroll-buttons" class="hidden absolute left-1 md:left-4 top-1/2 -translate-y-1/2 flex-col gap-4 z-40 transition-all duration-300">
+                        <button id="btn-scroll-up" class="p-3 md:p-4 bg-emerald-700/10 text-emerald-800 hover:bg-emerald-700 hover:text-white rounded-full shadow-sm backdrop-blur-sm transition-all focus:outline-none border border-emerald-900/10">
+                            <i data-lucide="chevron-up" class="w-6 h-6 md:w-8 md:h-8"></i>
                         </button>
-                        <button id="btn-scroll-down" class="p-2.5 md:p-3 bg-emerald-800/10 text-emerald-800 hover:bg-emerald-800 hover:text-white rounded-full shadow-sm backdrop-blur-sm transition-all focus:outline-none border border-emerald-900/10">
-                            <i data-lucide="chevron-down" class="w-5 h-5 md:w-6 md:h-6"></i>
+                        <button id="btn-scroll-down" class="p-3 md:p-4 bg-emerald-700/10 text-emerald-800 hover:bg-emerald-700 hover:text-white rounded-full shadow-sm backdrop-blur-sm transition-all focus:outline-none border border-emerald-900/10">
+                            <i data-lucide="chevron-down" class="w-6 h-6 md:w-8 md:h-8"></i>
                         </button>
                     </div>
 
@@ -196,7 +196,7 @@
                     </div>
 
                     <!-- Arabic Text Container (The element that actually scrolls) -->
-                    <div id="arabic-text-container" class="hidden mb-2 w-full flex-1 overflow-y-auto custom-scrollbar px-2 md:px-4">
+                    <div id="arabic-text-container" class="hidden mb-2 w-full flex-1 overflow-y-auto custom-scrollbar">
                         <!-- Ayahs injected via JS -->
                     </div>
 
@@ -326,7 +326,8 @@
             searchQuery: "",
             isSidebarOpen: false,
             volume: 1,
-            isMuted: false
+            isMuted: false,
+            savedScrollTop: 0     // Added to track exact reading position
         };
 
         // DOM Elements
@@ -363,7 +364,8 @@
         function saveBookmark() {
             localStorage.setItem('quran_app_bookmark', JSON.stringify({
                 playingType: state.playingType,
-                currentIndex: state.currentIndex
+                currentIndex: state.currentIndex,
+                scrollTop: arabicTextContainer.scrollTop || 0
             }));
         }
 
@@ -376,6 +378,7 @@
                         state.playingType = parsed.playingType;
                         state.currentIndex = parsed.currentIndex;
                         state.viewTab = parsed.playingType; // Align the tab view to the saved reading mode
+                        state.savedScrollTop = parsed.scrollTop || 0; // Load the exact scroll position
                     }
                 } catch (e) {
                     console.error("Failed to load bookmark", e);
@@ -616,7 +619,7 @@
                 if (data.code === 200) {
                     if (state.playingType === 'ayah') {
                         // Single Ayah Mode - flex-1 enables scroll inside the container
-                        arabicTextContainer.className = "leading-[4.5rem] md:leading-[6.5rem] text-slate-900 text-3xl md:text-4xl font-arabic w-full flex-1 overflow-y-auto custom-scrollbar px-2 md:px-4 pb-12";
+                        arabicTextContainer.className = "hidden leading-[4.5rem] md:leading-[6.5rem] text-slate-900 text-3xl md:text-4xl font-arabic w-full flex-1 overflow-y-auto custom-scrollbar px-2 md:px-4 pb-12";
                         
                         const ayah = data.data;
                         let htmlContent = `
@@ -635,7 +638,8 @@
                         document.getElementById('bottom-subtitle').innerText = `Surah ${ayah.surah.englishName}, Ayah ${ayah.numberInSurah}`;
                     } else if (state.playingType === 'page') {
                         // Page Mode - flex-1 enables internal scroll, ruled-page applies the lines
-                        arabicTextContainer.className = "mushaf-layout ruled-page text-slate-900 font-arabic w-full flex-1 overflow-y-auto custom-scrollbar px-2 md:px-6 pb-12";
+                        // IMPORTANT: pl-[5rem] md:px-24 adds huge blank padding to the left side, guaranteeing the side buttons NEVER touch the text!
+                        arabicTextContainer.className = "hidden mushaf-layout ruled-page text-slate-900 font-arabic w-full flex-1 overflow-y-auto custom-scrollbar pl-[5rem] pr-2 md:px-24 pb-12";
                         
                         const ayahs = data.data.ayahs;
                         
@@ -657,9 +661,18 @@
                             </div>`;
 
                         arabicTextContainer.innerHTML = htmlContent;
-                        // Scroll top on new page load
-                        arabicTextContainer.scrollTop = 0;
                     }
+
+                    // Restore exact scroll position if available
+                    setTimeout(() => {
+                        if (state.savedScrollTop > 0) {
+                            arabicTextContainer.scrollTop = state.savedScrollTop;
+                            state.savedScrollTop = 0; // Reset after initial load
+                        } else {
+                            arabicTextContainer.scrollTop = 0;
+                        }
+                    }, 50);
+
                 }
             } catch (err) {
                 console.error("Failed to fetch text:", err);
@@ -758,6 +771,13 @@
         // EVENT LISTENERS
         // ------------------------------------------------------------------------
         
+        // Save scroll position automatically when reading
+        let scrollTimeout;
+        arabicTextContainer.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(saveBookmark, 500); // Saves position every time you stop scrolling
+        });
+
         // Scroll Button Actions
         document.getElementById('btn-scroll-up').onclick = () => {
             const scrollAmount = arabicTextContainer.clientHeight * 0.6; // Scroll up by 60% of visible area
