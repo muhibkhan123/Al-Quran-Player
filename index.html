@@ -33,6 +33,14 @@
             background: #94a3b8;
         }
         
+        /* Mushaf Page Layout Styles */
+        .mushaf-layout {
+            text-align: justify;
+            text-justify: inter-word;
+            text-align-last: center;
+            display: block;
+        }
+
         /* Utility class for hiding elements */
         .hidden { display: none !important; }
     </style>
@@ -57,11 +65,14 @@
 
         <!-- Tabs for Para / Surah -->
         <div class="flex bg-slate-100 p-1 m-4 rounded-lg shrink-0">
-            <button id="tab-surah" class="flex-1 py-2 text-sm font-semibold rounded-md transition-all bg-white shadow text-emerald-700">
-                By Surah
+            <button id="tab-surah" class="flex-1 py-1.5 text-xs font-semibold rounded-md transition-all bg-white shadow text-emerald-700">
+                Surah
             </button>
-            <button id="tab-ayah" class="flex-1 py-2 text-sm font-semibold rounded-md transition-all text-slate-500 hover:text-emerald-600">
-                By Ayah
+            <button id="tab-ayah" class="flex-1 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-500 hover:text-emerald-600">
+                Ayah
+            </button>
+            <button id="tab-page" class="flex-1 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-500 hover:text-emerald-600">
+                Page
             </button>
         </div>
 
@@ -96,15 +107,21 @@
         </div>
 
         <!-- Center Display -->
-        <div class="flex-1 flex flex-col items-center justify-start p-4 md:p-8 text-center bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] overflow-y-auto custom-scrollbar">
-            <div class="bg-white p-6 md:p-10 rounded-3xl shadow-xl border border-emerald-100 max-w-5xl w-full flex flex-col h-full min-h-[500px] transition-all">
+        <div class="flex-1 flex flex-col items-center justify-start p-4 md:p-8 text-center bg-emerald-100/50 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] overflow-y-auto custom-scrollbar">
+            
+            <!-- The Mushaf "Page" Card -->
+            <div class="bg-[#FCFBF4] bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] p-8 md:p-12 rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-[#e5dfc5] max-w-5xl w-full flex flex-col min-h-[500px] h-auto transition-all relative">
+                
+                <!-- Traditional Mushaf inner borders -->
+                <div class="absolute inset-3 md:inset-5 border-2 border-emerald-900/10 pointer-events-none rounded-sm"></div>
+                <div class="absolute inset-4 md:inset-6 border border-emerald-900/10 pointer-events-none rounded-sm"></div>
                 
                 <!-- Header info for currently playing -->
-                <div class="shrink-0 mb-6 flex flex-col items-center">
-                    <p id="main-type" class="text-emerald-600 font-semibold tracking-widest uppercase text-xs md:text-sm mb-2">
+                <div id="mushaf-header" class="shrink-0 mb-6 flex flex-col items-center relative z-10 border-b border-emerald-900/10 pb-6 transition-all duration-300">
+                    <p id="main-type" class="text-emerald-700 font-bold tracking-widest uppercase text-xs md:text-sm mb-2">
                         Currently Playing (Surah)
                     </p>
-                    <h2 id="main-title" class="text-3xl md:text-4xl font-bold text-slate-800 mb-2">
+                    <h2 id="main-title" class="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
                         Surah 1
                     </h2>
                     <p id="main-subtitle" class="text-lg text-emerald-700 font-medium mb-4">
@@ -112,31 +129,42 @@
                     </p>
                     
                     <!-- Play Button -->
-                    <button id="main-play-btn" class="bg-emerald-600 text-white p-4 rounded-full shadow-lg hover:bg-emerald-700 hover:shadow-emerald-500/30 transition-all transform hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-emerald-200">
+                    <button id="main-play-btn" class="bg-emerald-700 text-white p-4 rounded-full shadow-lg hover:bg-emerald-800 hover:shadow-emerald-600/30 transition-all transform hover:-translate-y-1 focus:outline-none focus:ring-4 focus:ring-emerald-200">
                         <i data-lucide="play" id="main-icon-play" class="w-7 h-7 ml-1"></i>
                         <i data-lucide="pause" id="main-icon-pause" class="w-7 h-7 hidden"></i>
                     </button>
                 </div>
 
                 <!-- Reading Area (Ayahs) -->
-                <div id="reading-area" class="flex-1 overflow-y-auto custom-scrollbar mt-4 pt-6 border-t border-slate-100 text-right px-2 md:px-8" dir="rtl">
+                <div id="reading-area" class="mt-2 text-right px-2 md:px-8 h-auto relative z-10 flex flex-col justify-between flex-1" dir="rtl">
                     <!-- Audio streaming state -->
-                    <div id="audio-mode-msg" class="flex flex-col items-center justify-center h-full text-slate-400">
+                    <div id="audio-mode-msg" class="flex flex-col items-center justify-center text-slate-400 py-12">
                         <div class="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
                             <i data-lucide="book-open" class="text-emerald-200 w-12 h-12"></i>
                         </div>
                         <p>Audio streaming mode active.</p>
-                        <p class="text-sm mt-2">Switch to "By Ayah" to read the Uthmani script.</p>
+                        <p class="text-sm mt-2">Switch to "By Ayah" or "By Page" to read the Uthmani script.</p>
                     </div>
 
                     <!-- Loading Spinner -->
-                    <div id="loading-spinner" class="hidden flex justify-center items-center h-full">
-                        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-600"></div>
+                    <div id="loading-spinner" class="hidden flex justify-center items-center py-12">
+                        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-700"></div>
                     </div>
 
                     <!-- Arabic Text Container -->
-                    <div id="arabic-text-container" class="hidden leading-loose md:leading-[3.5rem] text-slate-800 text-2xl md:text-3xl font-arabic">
+                    <div id="arabic-text-container" class="hidden mb-8">
                         <!-- Ayahs injected via JS -->
+                    </div>
+
+                    <!-- Page Navigation (Only visible in Page mode) -->
+                    <div id="page-navigation" class="hidden justify-between items-center mt-auto pt-6 border-t border-emerald-900/10 font-sans pb-2" dir="ltr">
+                        <button id="btn-page-prev" class="px-5 py-2.5 bg-emerald-700/10 text-emerald-800 rounded-full hover:bg-emerald-700/20 transition-colors font-semibold text-sm flex items-center gap-2">
+                            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                        </button>
+                        <span id="page-indicator" class="text-emerald-800 font-bold tracking-wide"></span>
+                        <button id="btn-page-next" class="px-6 py-2.5 bg-emerald-700 text-white rounded-full shadow-md hover:bg-emerald-800 transition-colors font-semibold text-sm flex items-center gap-2">
+                            Next Page <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                        </button>
                     </div>
                 </div>
 
@@ -144,7 +172,7 @@
         </div>
 
         <!-- --- BOTTOM AUDIO PLAYER BAR --- -->
-        <div class="bg-white border-t border-emerald-100 p-4 md:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-10 w-full shrink-0">
+        <div id="bottom-player-bar" class="bg-white border-t border-emerald-100 p-4 md:p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-10 w-full shrink-0 transition-all duration-300">
             <div class="max-w-4xl mx-auto">
                 
                 <!-- Progress Bar -->
@@ -228,6 +256,7 @@
 
         // Data (Total 6236 Ayahs in the Quran)
         const AYAHS = Array.from({length: 6236}, (_, i) => "Ayah " + (i + 1));
+        const PAGES = Array.from({length: 604}, (_, i) => "Page " + (i + 1));
 
         const SURAHS = [
             "Al-Fatihah", "Al-Baqarah", "Ali 'Imran", "An-Nisa", "Al-Ma'idah", "Al-An'am", "Al-A'raf", "Al-Anfal", "At-Tawbah", "Yunus",
@@ -266,6 +295,7 @@
         // Tabs
         const tabSurah = document.getElementById('tab-surah');
         const tabAyah = document.getElementById('tab-ayah');
+        const tabPage = document.getElementById('tab-page');
         
         // Reading Area Elements
         const audioModeMsg = document.getElementById('audio-mode-msg');
@@ -310,7 +340,11 @@
         // UI RENDERING
         // ------------------------------------------------------------------------
         function renderSidebar() {
-            const activeList = state.viewTab === 'ayah' ? AYAHS : SURAHS;
+            let activeList;
+            if (state.viewTab === 'ayah') activeList = AYAHS;
+            else if (state.viewTab === 'page') activeList = PAGES;
+            else activeList = SURAHS;
+            
             const query = state.searchQuery.toLowerCase();
             
             const filteredItems = activeList
@@ -347,8 +381,8 @@
                         </span>
                     </div>`;
 
-                // Add playing animation bars if active
-                if (isPlayingItem && state.isPlaying) {
+                // Add playing animation bars if active and not in page mode (since page mode pauses audio)
+                if (isPlayingItem && state.isPlaying && state.playingType !== 'page') {
                     innerHTML += `
                         <div class="flex gap-1 items-end h-4 shrink-0">
                             <div class="w-1 h-2 bg-emerald-500 animate-[pulse_1s_ease-in-out_infinite] rounded-t"></div>
@@ -372,24 +406,60 @@
         }
 
         function updateMainDisplay() {
-            const isAyah = state.playingType === 'ayah';
-            const name = isAyah ? AYAHS[state.currentIndex] : SURAHS[state.currentIndex];
-            const num = state.currentIndex + 1;
+            let name, num, typeLabel;
+            if (state.playingType === 'ayah') {
+                name = AYAHS[state.currentIndex]; num = state.currentIndex + 1; typeLabel = 'Ayah';
+            } else if (state.playingType === 'page') {
+                name = PAGES[state.currentIndex]; num = state.currentIndex + 1; typeLabel = 'Page';
+            } else {
+                name = SURAHS[state.currentIndex]; num = state.currentIndex + 1; typeLabel = 'Surah';
+            }
 
-            // Main display texts
-            document.getElementById('main-type').innerText = `Currently Playing (${isAyah ? 'Ayah' : 'Surah'})`;
-            document.getElementById('main-title').innerText = `${isAyah ? 'Ayah' : 'Surah'} ${num}`;
-            document.getElementById('main-subtitle').innerText = name;
-            
-            // Bottom bar texts
-            document.getElementById('bottom-title').innerText = `${isAyah ? 'Ayah' : 'Surah'} ${num}`;
-            document.getElementById('bottom-subtitle').innerText = name;
+            const mushafHeader = document.getElementById('mushaf-header');
+            const bottomPlayerBar = document.getElementById('bottom-player-bar');
+            const pageNavigation = document.getElementById('page-navigation');
+            const pageIndicator = document.getElementById('page-indicator');
+
+            // Hide headers/audio players when in Page mode
+            if (state.playingType === 'page') {
+                mushafHeader.classList.add('hidden');
+                bottomPlayerBar.classList.add('hidden');
+                pageNavigation.classList.remove('hidden');
+                pageNavigation.classList.add('flex');
+                pageIndicator.innerText = `Page ${num}`;
+            } else {
+                mushafHeader.classList.remove('hidden');
+                bottomPlayerBar.classList.remove('hidden');
+                pageNavigation.classList.add('hidden');
+                pageNavigation.classList.remove('flex');
+
+                // Main display texts (Only needed when visible)
+                document.getElementById('main-type').innerText = `Currently Viewing (${typeLabel})`;
+                document.getElementById('main-title').innerText = `${typeLabel} ${num}`;
+                document.getElementById('main-subtitle').innerText = name;
+                
+                // Bottom bar texts
+                document.getElementById('bottom-title').innerText = `${typeLabel} ${num}`;
+                document.getElementById('bottom-subtitle').innerText = name;
+            }
 
             // Update Play/Pause Icons
             const mPlay = document.getElementById('main-icon-play');
             const mPause = document.getElementById('main-icon-pause');
             const bPlay = document.getElementById('bottom-icon-play');
             const bPause = document.getElementById('bottom-icon-pause');
+            
+            const mainPlayBtn = document.getElementById('main-play-btn');
+            const bottomPlayBtn = document.getElementById('btn-play');
+
+            // Visual feedback for disabled play button in Page mode
+            if (state.playingType === 'page') {
+                mainPlayBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                bottomPlayBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                mainPlayBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                bottomPlayBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
 
             if (state.isPlaying) {
                 mPlay.classList.add('hidden'); mPause.classList.remove('hidden');
@@ -411,21 +481,29 @@
         }
 
         function updateTabStyles() {
-            searchInput.placeholder = `Search ${state.viewTab === 'ayah' ? 'Ayah' : 'Surah'}...`;
+            const label = state.viewTab.charAt(0).toUpperCase() + state.viewTab.slice(1);
+            searchInput.placeholder = `Search ${label}...`;
+            
+            // Reset all tabs
+            tabSurah.className = "flex-1 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-500 hover:text-emerald-600";
+            tabAyah.className = "flex-1 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-500 hover:text-emerald-600";
+            tabPage.className = "flex-1 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-500 hover:text-emerald-600";
+
+            // Highlight active
             if (state.viewTab === 'surah') {
-                tabSurah.className = "flex-1 py-2 text-sm font-semibold rounded-md transition-all bg-white shadow text-emerald-700";
-                tabAyah.className = "flex-1 py-2 text-sm font-semibold rounded-md transition-all text-slate-500 hover:text-emerald-600";
+                tabSurah.className = "flex-1 py-1.5 text-xs font-semibold rounded-md transition-all bg-white shadow text-emerald-700";
+            } else if (state.viewTab === 'ayah') {
+                tabAyah.className = "flex-1 py-1.5 text-xs font-semibold rounded-md transition-all bg-white shadow text-emerald-700";
             } else {
-                tabSurah.className = "flex-1 py-2 text-sm font-semibold rounded-md transition-all text-slate-500 hover:text-emerald-600";
-                tabAyah.className = "flex-1 py-2 text-sm font-semibold rounded-md transition-all bg-white shadow text-emerald-700";
+                tabPage.className = "flex-1 py-1.5 text-xs font-semibold rounded-md transition-all bg-white shadow text-emerald-700";
             }
         }
 
         // ------------------------------------------------------------------------
-        // API (FETCH AYAH TEXT)
+        // API (FETCH TEXT)
         // ------------------------------------------------------------------------
-        async function fetchAyahText() {
-            if (state.playingType !== 'ayah') {
+        async function fetchTextData() {
+            if (state.playingType === 'surah') {
                 audioModeMsg.classList.remove('hidden');
                 loadingSpinner.classList.add('hidden');
                 arabicTextContainer.classList.add('hidden');
@@ -438,30 +516,53 @@
             loadingSpinner.classList.remove('hidden');
 
             try {
-                // Fetch direct text and meta data for the specific Ayah via API
-                const res = await fetch(`https://api.alquran.cloud/v1/ayah/${state.currentIndex + 1}/quran-uthmani`);
+                let url = state.playingType === 'ayah' 
+                    ? `https://api.alquran.cloud/v1/ayah/${state.currentIndex + 1}/quran-uthmani`
+                    : `https://api.alquran.cloud/v1/page/${state.currentIndex + 1}/quran-uthmani`;
+
+                const res = await fetch(url);
                 const data = await res.json();
                 
                 if (data.code === 200) {
-                    const ayah = data.data;
-                    let htmlContent = `
-                        <span class="inline">
-                            ${ayah.text} 
-                            <span class="text-emerald-600 text-base md:text-xl mx-2 font-sans inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-50 border border-emerald-100">
-                                ${ayah.numberInSurah}
+                    if (state.playingType === 'ayah') {
+                        // Styling for single ayah
+                        arabicTextContainer.className = "leading-loose md:leading-[3.5rem] text-slate-900 text-2xl md:text-3xl font-arabic";
+                        
+                        const ayah = data.data;
+                        let htmlContent = `
+                            <span class="inline">
+                                ${ayah.text} 
+                                <span class="text-emerald-700 text-base md:text-xl mx-2 font-sans inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-900/5 border border-emerald-900/20">
+                                    ${ayah.numberInSurah}
+                                </span>
                             </span>
-                        </span>
-                        <div class="text-sm text-slate-500 mt-6 font-sans text-center border-t border-slate-100 pt-4">
-                            Surah ${ayah.surah.englishName} (${ayah.surah.name}) - Ayah ${ayah.numberInSurah}
-                        </div>`;
-                    arabicTextContainer.innerHTML = htmlContent;
+                            <div class="text-sm text-slate-500 mt-6 font-sans text-center border-t border-emerald-900/10 pt-4">
+                                Surah ${ayah.surah.englishName} (${ayah.surah.name}) - Ayah ${ayah.numberInSurah}
+                            </div>`;
+                        arabicTextContainer.innerHTML = htmlContent;
 
-                    // Update main screen with dynamically loaded Surah metadata for this Ayah
-                    document.getElementById('main-subtitle').innerText = `Surah ${ayah.surah.englishName}, Ayah ${ayah.numberInSurah}`;
-                    document.getElementById('bottom-subtitle').innerText = `Surah ${ayah.surah.englishName}, Ayah ${ayah.numberInSurah}`;
+                        document.getElementById('main-subtitle').innerText = `Surah ${ayah.surah.englishName}, Ayah ${ayah.numberInSurah}`;
+                        document.getElementById('bottom-subtitle').innerText = `Surah ${ayah.surah.englishName}, Ayah ${ayah.numberInSurah}`;
+                    } else if (state.playingType === 'page') {
+                        // Styling for full Mushaf page (Justified, larger text, taller line height)
+                        arabicTextContainer.className = "mushaf-layout leading-[3.5rem] md:leading-[4.5rem] text-slate-900 text-3xl md:text-4xl font-arabic px-2 md:px-6";
+                        
+                        const ayahs = data.data.ayahs;
+                        let htmlContent = ayahs.map(ayah => `
+                            <span class="inline">
+                                ${ayah.text} 
+                                <span class="text-emerald-700 text-base md:text-xl mx-1.5 font-sans inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-900/5 border border-emerald-900/20">
+                                    ${ayah.numberInSurah}
+                                </span>
+                            </span>
+                        `).join(' ');
+                            
+                        // Pushed only the Arabic text; removed all English subtitle/footer clutter
+                        arabicTextContainer.innerHTML = htmlContent;
+                    }
                 }
             } catch (err) {
-                console.error("Failed to fetch Ayah text:", err);
+                console.error("Failed to fetch text:", err);
                 arabicTextContainer.innerHTML = '<p class="text-center text-lg mt-10">Failed to load text. Please check your connection.</p>';
             } finally {
                 loadingSpinner.classList.add('hidden');
@@ -473,6 +574,8 @@
         // ACTIONS & LOGIC
         // ------------------------------------------------------------------------
         function togglePlay() {
+            if (state.playingType === 'page') return; // Audio playback disabled in page reading mode
+            
             if (state.isPlaying) {
                 audio.pause();
             } else {
@@ -489,23 +592,37 @@
 
             state.playingType = type;
             state.currentIndex = index;
-            state.isPlaying = true;
             state.isSidebarOpen = false;
 
-            audio.src = getAudioSource(type, index);
-            audio.play();
+            if (type === 'page') {
+                // Pause audio when switching to reading full pages
+                audio.pause();
+                state.isPlaying = false;
+                audio.src = "";
+                progressSlider.value = 0;
+                timeCurrent.innerText = "00:00";
+                timeTotal.innerText = "00:00";
+            } else {
+                state.isPlaying = true;
+                audio.src = getAudioSource(type, index);
+                audio.play();
+            }
 
             updateSidebarVisibility();
             updateMainDisplay();
             renderSidebar();
 
             if (typeChanged || indexChanged) {
-                fetchAyahText();
+                fetchTextData();
             }
         }
 
         function nextTrack() {
-            const maxList = state.playingType === 'ayah' ? AYAHS : SURAHS;
+            let maxList;
+            if (state.playingType === 'ayah') maxList = AYAHS;
+            else if (state.playingType === 'page') maxList = PAGES;
+            else maxList = SURAHS;
+
             if (state.currentIndex < maxList.length - 1) {
                 playTrack(state.playingType, state.currentIndex + 1);
             }
@@ -559,6 +676,10 @@
         document.getElementById('btn-next').onclick = nextTrack;
         document.getElementById('btn-prev').onclick = prevTrack;
         document.getElementById('btn-mute').onclick = toggleMute;
+        
+        // Page mode navigation buttons
+        document.getElementById('btn-page-next').onclick = nextTrack;
+        document.getElementById('btn-page-prev').onclick = prevTrack;
 
         progressSlider.addEventListener('input', (e) => {
             audio.currentTime = e.target.value;
@@ -592,6 +713,12 @@
             renderSidebar();
         };
 
+        tabPage.onclick = () => {
+            state.viewTab = 'page';
+            updateTabStyles();
+            renderSidebar();
+        };
+
         // Search
         searchInput.addEventListener('input', (e) => {
             state.searchQuery = e.target.value;
@@ -621,7 +748,7 @@
         updateTabStyles();
         updateMainDisplay();
         renderSidebar();
-        fetchAyahText();
+        fetchTextData();
 
     </script>
 </body>
