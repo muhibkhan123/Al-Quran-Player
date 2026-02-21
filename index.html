@@ -23,7 +23,7 @@
             width: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f8fafc;
+            background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
             background: #cbd5e1;
@@ -53,6 +53,7 @@
                 #a7f3d0 80px
             ) !important;
             background-size: 100% 80px !important;
+            background-attachment: local !important; /* Forces lines to scroll with text */
             padding-top: 10px; 
         }
         @media (min-width: 768px) {
@@ -68,6 +69,7 @@
                     #a7f3d0 120px
                 ) !important;
                 background-size: 100% 120px !important;
+                background-attachment: local !important; /* Forces lines to scroll with text */
                 padding-top: 15px;
             }
         }
@@ -137,15 +139,15 @@
             <h1 class="text-lg font-bold ml-2">Quran Audio Player</h1>
         </div>
 
-        <!-- Center Display -->
-        <div class="flex-1 flex flex-col items-center justify-start p-4 md:p-8 text-center bg-emerald-100/50 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] overflow-y-auto custom-scrollbar">
+        <!-- Center Display (Outer scroll hidden, handles flexible sizing) -->
+        <div class="flex-1 flex flex-col items-center justify-start p-4 md:p-8 text-center bg-emerald-100/50 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] overflow-hidden">
             
-            <!-- The Mushaf "Page" Card -->
-            <div class="bg-[#FCFBF4] bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] p-8 md:p-12 rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-[#e5dfc5] max-w-5xl w-full flex flex-col min-h-[500px] shrink-0 h-max transition-all relative">
+            <!-- The Mushaf "Page" Card (flex-1 to take up available height, min-h-0 required for internal scroll to work) -->
+            <div class="bg-[#FCFBF4] bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] p-6 md:p-10 rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-[#e5dfc5] max-w-5xl w-full flex flex-col flex-1 min-h-0 transition-all relative">
                 
-                <!-- Traditional Mushaf inner borders -->
-                <div class="absolute inset-3 md:inset-5 border-2 border-emerald-900/10 pointer-events-none rounded-sm"></div>
-                <div class="absolute inset-4 md:inset-6 border border-emerald-900/10 pointer-events-none rounded-sm"></div>
+                <!-- Traditional Mushaf inner borders (z-20 keeps them on top of scrolling text) -->
+                <div class="absolute inset-2 md:inset-4 border-2 border-emerald-900/10 pointer-events-none rounded-sm z-20"></div>
+                <div class="absolute inset-3 md:inset-5 border border-emerald-900/10 pointer-events-none rounded-sm z-20"></div>
                 
                 <!-- Header info for currently playing -->
                 <div id="mushaf-header" class="shrink-0 mb-6 flex flex-col items-center relative z-10 border-b border-emerald-900/10 pb-6 transition-all duration-300">
@@ -166,10 +168,10 @@
                     </button>
                 </div>
 
-                <!-- Reading Area (Ayahs) -->
-                <div id="reading-area" class="mt-2 text-right px-2 md:px-8 h-auto relative z-10 flex flex-col justify-between flex-1" dir="rtl">
+                <!-- Reading Area (Ayahs) (flex-1 and overflow-hidden let inner container scroll) -->
+                <div id="reading-area" class="mt-2 text-right h-full relative z-10 flex flex-col flex-1 overflow-hidden" dir="rtl">
                     <!-- Audio streaming state -->
-                    <div id="audio-mode-msg" class="flex flex-col items-center justify-center text-slate-400 py-12">
+                    <div id="audio-mode-msg" class="flex flex-col items-center justify-center text-slate-400 flex-1">
                         <div class="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
                             <i data-lucide="book-open" class="text-emerald-200 w-12 h-12"></i>
                         </div>
@@ -178,17 +180,17 @@
                     </div>
 
                     <!-- Loading Spinner -->
-                    <div id="loading-spinner" class="hidden flex justify-center items-center py-12">
+                    <div id="loading-spinner" class="hidden flex justify-center items-center flex-1">
                         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-700"></div>
                     </div>
 
-                    <!-- Arabic Text Container -->
-                    <div id="arabic-text-container" class="hidden mb-8 w-full">
+                    <!-- Arabic Text Container (The element that actually scrolls) -->
+                    <div id="arabic-text-container" class="hidden mb-2 w-full flex-1 overflow-y-auto custom-scrollbar px-2 md:px-4">
                         <!-- Ayahs injected via JS -->
                     </div>
 
-                    <!-- Page Navigation (Only visible in Page mode) -->
-                    <div id="page-navigation" class="hidden justify-between items-center mt-auto pt-6 border-t border-emerald-900/10 font-sans pb-2" dir="ltr">
+                    <!-- Page Navigation (Static/Sticky at bottom of reading area) -->
+                    <div id="page-navigation" class="hidden justify-between items-center shrink-0 pt-4 border-t border-emerald-900/10 font-sans pb-2 px-2 md:px-4" dir="ltr">
                         <button id="btn-page-prev" class="px-5 py-2.5 bg-emerald-700/10 text-emerald-800 rounded-full hover:bg-emerald-700/20 transition-colors font-semibold text-sm flex items-center gap-2">
                             <i data-lucide="chevron-left" class="w-5 h-5"></i>
                         </button>
@@ -567,8 +569,8 @@
                 
                 if (data.code === 200) {
                     if (state.playingType === 'ayah') {
-                        // Single Ayah Mode - Increased size and line height
-                        arabicTextContainer.className = "leading-[4.5rem] md:leading-[6.5rem] text-slate-900 text-3xl md:text-4xl font-arabic w-full";
+                        // Single Ayah Mode - flex-1 enables scroll inside the container
+                        arabicTextContainer.className = "leading-[4.5rem] md:leading-[6.5rem] text-slate-900 text-3xl md:text-4xl font-arabic w-full flex-1 overflow-y-auto custom-scrollbar px-2 md:px-4 pb-12";
                         
                         const ayah = data.data;
                         let htmlContent = `
@@ -586,8 +588,8 @@
                         document.getElementById('main-subtitle').innerText = `Surah ${ayah.surah.englishName}, Ayah ${ayah.numberInSurah}`;
                         document.getElementById('bottom-subtitle').innerText = `Surah ${ayah.surah.englishName}, Ayah ${ayah.numberInSurah}`;
                     } else if (state.playingType === 'page') {
-                        // Apply my massive custom ruled CSS from the <style> block directly
-                        arabicTextContainer.className = "mushaf-layout ruled-page text-slate-900 font-arabic w-full px-2 md:px-6";
+                        // Page Mode - flex-1 enables internal scroll, ruled-page applies the lines
+                        arabicTextContainer.className = "mushaf-layout ruled-page text-slate-900 font-arabic w-full flex-1 overflow-y-auto custom-scrollbar px-2 md:px-4 pb-12";
                         
                         const ayahs = data.data.ayahs;
                         
