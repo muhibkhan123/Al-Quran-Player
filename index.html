@@ -170,6 +170,17 @@
 
                 <!-- Reading Area (Ayahs) (flex-1 and overflow-hidden let inner container scroll) -->
                 <div id="reading-area" class="mt-2 text-right h-full relative z-10 flex flex-col flex-1 overflow-hidden" dir="rtl">
+                    
+                    <!-- Side Scroll Buttons -->
+                    <div id="side-scroll-buttons" class="hidden absolute left-0 md:left-4 top-1/2 -translate-y-1/2 flex-col gap-3 z-30 transition-all duration-300">
+                        <button id="btn-scroll-up" class="p-2.5 md:p-3 bg-emerald-800/10 text-emerald-800 hover:bg-emerald-800 hover:text-white rounded-full shadow-sm backdrop-blur-sm transition-all focus:outline-none border border-emerald-900/10">
+                            <i data-lucide="chevron-up" class="w-5 h-5 md:w-6 md:h-6"></i>
+                        </button>
+                        <button id="btn-scroll-down" class="p-2.5 md:p-3 bg-emerald-800/10 text-emerald-800 hover:bg-emerald-800 hover:text-white rounded-full shadow-sm backdrop-blur-sm transition-all focus:outline-none border border-emerald-900/10">
+                            <i data-lucide="chevron-down" class="w-5 h-5 md:w-6 md:h-6"></i>
+                        </button>
+                    </div>
+
                     <!-- Audio streaming state -->
                     <div id="audio-mode-msg" class="flex flex-col items-center justify-center text-slate-400 flex-1">
                         <div class="w-24 h-24 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
@@ -335,6 +346,7 @@
         const audioModeMsg = document.getElementById('audio-mode-msg');
         const loadingSpinner = document.getElementById('loading-spinner');
         const arabicTextContainer = document.getElementById('arabic-text-container');
+        const sideScrollButtons = document.getElementById('side-scroll-buttons');
         
         // Progress & Volume
         const progressSlider = document.getElementById('progress-slider');
@@ -344,6 +356,32 @@
 
         // Initialize Lucide Icons
         lucide.createIcons();
+
+        // ------------------------------------------------------------------------
+        // BOOKMARK / AUTO-SAVE LOGIC
+        // ------------------------------------------------------------------------
+        function saveBookmark() {
+            localStorage.setItem('quran_app_bookmark', JSON.stringify({
+                playingType: state.playingType,
+                currentIndex: state.currentIndex
+            }));
+        }
+
+        function loadBookmark() {
+            const saved = localStorage.getItem('quran_app_bookmark');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed && parsed.playingType && parsed.currentIndex !== undefined) {
+                        state.playingType = parsed.playingType;
+                        state.currentIndex = parsed.currentIndex;
+                        state.viewTab = parsed.playingType; // Align the tab view to the saved reading mode
+                    }
+                } catch (e) {
+                    console.error("Failed to load bookmark", e);
+                }
+            }
+        }
 
         // ------------------------------------------------------------------------
         // HELPER FUNCTIONS
@@ -459,9 +497,13 @@
             if (state.playingType === 'page') {
                 mushafHeader.classList.add('hidden');
                 bottomPlayerBar.classList.add('hidden');
+                
                 pageNavigation.classList.remove('hidden');
                 pageNavigation.classList.add('flex');
                 pageIndicator.innerText = `Page ${num}`;
+                
+                sideScrollButtons.classList.remove('hidden');
+                sideScrollButtons.classList.add('flex');
 
                 // Turn Sidebar into a sliding drawer on ALL screen sizes (Full screen layout)
                 sidebar.classList.remove('md:translate-x-0', 'md:static');
@@ -470,8 +512,12 @@
             // --- STANDARD MODE ---
                 mushafHeader.classList.remove('hidden');
                 bottomPlayerBar.classList.remove('hidden');
+                
                 pageNavigation.classList.add('hidden');
                 pageNavigation.classList.remove('flex');
+                
+                sideScrollButtons.classList.add('hidden');
+                sideScrollButtons.classList.remove('flex');
 
                 // Restore sidebar fixed presence on Desktop
                 sidebar.classList.add('md:translate-x-0', 'md:static');
@@ -589,7 +635,7 @@
                         document.getElementById('bottom-subtitle').innerText = `Surah ${ayah.surah.englishName}, Ayah ${ayah.numberInSurah}`;
                     } else if (state.playingType === 'page') {
                         // Page Mode - flex-1 enables internal scroll, ruled-page applies the lines
-                        arabicTextContainer.className = "mushaf-layout ruled-page text-slate-900 font-arabic w-full flex-1 overflow-y-auto custom-scrollbar px-2 md:px-4 pb-12";
+                        arabicTextContainer.className = "mushaf-layout ruled-page text-slate-900 font-arabic w-full flex-1 overflow-y-auto custom-scrollbar px-2 md:px-6 pb-12";
                         
                         const ayahs = data.data.ayahs;
                         
@@ -611,6 +657,8 @@
                             </div>`;
 
                         arabicTextContainer.innerHTML = htmlContent;
+                        // Scroll top on new page load
+                        arabicTextContainer.scrollTop = 0;
                     }
                 }
             } catch (err) {
@@ -645,6 +693,9 @@
             state.playingType = type;
             state.currentIndex = index;
             state.isSidebarOpen = false;
+            
+            // Automatically save user's current track/page as bookmark
+            saveBookmark();
 
             if (type === 'page') {
                 // Pause audio when switching to reading full pages
@@ -707,6 +758,17 @@
         // EVENT LISTENERS
         // ------------------------------------------------------------------------
         
+        // Scroll Button Actions
+        document.getElementById('btn-scroll-up').onclick = () => {
+            const scrollAmount = arabicTextContainer.clientHeight * 0.6; // Scroll up by 60% of visible area
+            arabicTextContainer.scrollBy({ top: -scrollAmount, behavior: 'smooth' });
+        };
+        
+        document.getElementById('btn-scroll-down').onclick = () => {
+            const scrollAmount = arabicTextContainer.clientHeight * 0.6; // Scroll down by 60% of visible area
+            arabicTextContainer.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+        };
+
         // Audio Events
         audio.addEventListener('timeupdate', () => {
             if (audio.duration) {
@@ -796,6 +858,10 @@
         // ------------------------------------------------------------------------
         // INITIALIZATION
         // ------------------------------------------------------------------------
+        // Step 1: Load Bookmark to restore user's previous reading place
+        loadBookmark(); 
+        
+        // Step 2: Initialize UI and Audio based on loaded state
         audio.src = getAudioSource(state.playingType, state.currentIndex);
         updateTabStyles();
         updateMainDisplay();
