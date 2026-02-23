@@ -2,9 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quran Audio Player</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Al Quran</title>
     
+    <!-- Web App & PWA Meta Tags -->
+    <meta name="theme-color" content="#047857">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Al Quran">
+    
+    <!-- App Icon -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiI+PHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIGZpbGw9IiMwNDc4NTciIHJ4PSIxMTIiLz48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMjU2IDQwMGMtNzkuNSAwLTE0NC02NC41LTE0NC0xNDRzNjQuNS0xNDQgMTQ0LTE0NCAxNDQgNjQuNSAxNDQgMTQ0LTY0LjUgMTQ0LTE0NCAxNDR6bTAtMjU2Yy02MS45IDAtMTEyIDUwLjEtMTEyIDExMnM1MC4xIDExMiAxMTIgMTEyIDExMi01MC4xIDExMi0xMTItNTAuMS0xMTItMTEyLTExMnoiLz48L3N2Zz4=">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -299,6 +309,26 @@
 
     <!-- Application Logic -->
     <script>
+        // ------------------------------------------------------------------------
+        // APP MANIFEST (Makes the website installable)
+        // ------------------------------------------------------------------------
+        const pwaManifest = {
+            name: "Al Quran Player",
+            short_name: "Al Quran",
+            display: "standalone",
+            start_url: location.href,
+            background_color: "#FCFBF4",
+            theme_color: "#047857",
+            icons: [{
+                src: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiB2aWV3Qm94PSIwIDAgNTEyIDUxMiI+PHJlY3Qgd2lkdGg9IjUxMiIgaGVpZ2h0PSI1MTIiIGZpbGw9IiMwNDc4NTciIHJ4PSIxMTIiLz48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMjU2IDQwMGMtNzkuNSAwLTE0NC02NC41LTE0NC0xNDRzNjQuNS0xNDQgMTQ0LTE0NCAxNDQgNjQuNSAxNDQgMTQ0LTY0LjUgMTQ0LTE0NCAxNDR6bTAtMjU2Yy02MS45IDAtMTEyIDUwLjEtMTEyIDExMnM1MC4xIDExMiAxMTIgMTEyIDExMi01MC4xIDExMi0xMTItNTAuMS0xMTItMTEyLTExMnoiLz48L3N2Zz4=",
+                sizes: "512x512",
+                type: "image/svg+xml",
+                purpose: "any maskable"
+            }]
+        };
+        const manifestBlob = new Blob([JSON.stringify(pwaManifest)], {type: 'application/json'});
+        document.head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${URL.createObjectURL(manifestBlob)}">`);
+
         // ------------------------------------------------------------------------
         // INSTRUCTION FOR YOUR LOCAL FILES:
         // Change `USE_LOCAL_FILES` to true when you host this with your own files.
